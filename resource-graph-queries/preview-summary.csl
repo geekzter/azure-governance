@@ -1,0 +1,4 @@
+Resources
+| where apiVersion endswith "preview"
+| summarize ResourceCount=count() by type, apiVersion
+| order by type asc
