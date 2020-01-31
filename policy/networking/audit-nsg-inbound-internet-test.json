@@ -1,0 +1,19 @@
+{
+    "if": {
+        "allOf": [
+            {
+                "field": "type",
+                "equals": "Microsoft.Network/networkSecurityGroups/securityRules"
+            },
+            {
+                "not": {
+                    "field": "Microsoft.Network/networkSecurityGroups/securityRules/sourceAddressPrefix",
+                    "equals": "*"
+                }
+            }
+        ]
+    },
+    "then": {
+        "effect": "audit"
+    }
+}
