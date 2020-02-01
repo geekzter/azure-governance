@@ -128,7 +128,7 @@ foreach ($subscriptionGuid in $subscriptionGuids)
         }
 
         # Fetch SQL script
-        Invoke-WebRequest "https://ewterraformstate.blob.core.windows.net/assets/DisableSQLLogins.sql" -UseBasicParsing -OutFile DisableSQLLoginsFetched.sql
+        Invoke-WebRequest "https://raw.githubusercontent.com/geekzter/azure-governance/master/runbooks/sqldb/DisableSQLLogins.sql" -UseBasicParsing -OutFile DisableSQLLoginsFetched.sql
 
         $params = @{
             'Database' = 'master'
