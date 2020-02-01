@@ -58,15 +58,19 @@ foreach ($subscriptionGuid in $subscriptionGuids)
         $connectionstring = "Server=tcp:$($sqlServer.FullyQualifiedDomainName),1433;User ID=$($sqlServer.SqlAdministratorLogin);Password=$($serverPassword);Trusted_Connection=False;Encrypt=True;Connection Timeout=30;"
         $conn = New-Object System.Data.SqlClient.SqlConnection($connectionstring)
 
-        Write-Host "Connecting to SQL Server $($sqlServer.FullyQualifiedDomainName).."
         try {
+            # Connect to SQL Server
+            Write-Host "Connecting to SQL Server $($sqlServer.FullyQualifiedDomainName).."
             $conn.Open()
+
+            # Prepare SQL command
             #$query = (Get-Content "./disable-sql-logins/disable-sql-logins.sql") -replace "@admin_login", $sqlServer.SqlAdministratorLogin
             $query = (Get-Content "./disable-sql-logins/disable-sql-logins.sql")
             $command = New-Object -TypeName System.Data.SqlClient.SqlCommand($query, $conn) 
-
             # Use parameterized query to protect against SQL injection
             $null = $command.Parameters.AddWithValue("@admin_login",$sqlServer.SqlAdministratorLogin)
+
+            # Execute SQL command
             Write-Host "Executing query:`n$($command.CommandText)"
             $result = $command.ExecuteNonQuery()
             $result
