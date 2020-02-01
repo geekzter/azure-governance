@@ -10,7 +10,7 @@ if ($Timer.IsPastDue) {
 }
 
 Write-Host "`nRetrieving subscriptions..." 
-$subscriptionGuids = Get-AzureRmSubscription | Select-Object -Expand Id
+$subscriptionGuids = Get-AzSubscription | Select-Object -Expand Id
 
 # Enumerate subscriptions
 foreach ($subscriptionGuid in $subscriptionGuids)
@@ -41,37 +41,37 @@ foreach ($subscriptionGuid in $subscriptionGuids)
         $secureString = ConvertTo-SecureString $serverPassword -AsPlainText -Force
         Set-AzSqlServer -ResourceGroupName $sqlServer.ResourceGroupName -ServerName $sqlServer.ServerName -SqlAdministratorPassword $secureString -ServerVersion $sqlServer.ServerVersion
 
-        # Define the connection to the SQL Database
-        # $Conn = New-Object System.Data.SqlClient.SqlConnection("Server=tcp:$($sqlServer.FullyQualifiedDomainName),1433;User ID=$($sqlServer.SqlAdministratorLogin);Password=$($serverPassword);Trusted_Connection=False;Encrypt=True;Connection Timeout=30;")
-
         # Add outbound IP address to SQL Firewall
         $ipAddress = Invoke-WebRequest 'https://api.ipify.org' -UseBasicParsing | Select-Object -ExpandProperty Content
         Write-Host "`nOutbound IP address is $ipAddress" 
 
-        $currentRules = Get-AzServerFirewallRule -ServerName $sqlServer.ServerName -ResourceGroupName $sqlServer.ResourceGroupName
+        $currentRules = Get-AzSqlServerFirewallRule -ServerName $sqlServer.ServerName -ResourceGroupName $sqlServer.ResourceGroupName
         $rule = $currentRules | Where-Object ($_.StartIpAddress -eq $ipAddress)
         # If a rule with this IP does not exist
         If (!$rule)
         {
-            Write-Host "No rule for $ipAddress, creating...""
-            New-AzSqlServerFirewallRule -ResourceGroupName $sqlServer.ResourceGroupName -ServerName $sqlServer.ServerName -StartIpAddress $ipAddress -EndIpAddress $ipAddress -FirewallRuleName "RunbookRule $ipAddress"
+            Write-Host "No rule for $ipAddress, creating..."
+            New-AzSqlServerFirewallRule -ResourceGroupName $sqlServer.ResourceGroupName -ServerName $sqlServer.ServerName -StartIpAddress $ipAddress -EndIpAddress $ipAddress -FirewallRuleName "RunbookRule $ipAddress" -ErrorAction SilentlyContinue # Ignore error on already existing rule
         }
 
-        # Fetch SQL script
-        Invoke-WebRequest "https://raw.githubusercontent.com/geekzter/azure-governance/master/runbooks/sqldb/DisableSQLLogins.sql" -UseBasicParsing -OutFile DisableSQLLoginsFetched.sql
+        # Define the connection to the SQL Database
+        $connectionstring = "Server=tcp:$($sqlServer.FullyQualifiedDomainName),1433;User ID=$($sqlServer.SqlAdministratorLogin);Password=$($serverPassword);Trusted_Connection=False;Encrypt=True;Connection Timeout=30;"
+        $conn = New-Object System.Data.SqlClient.SqlConnection($connectionstring)
 
-        $params = @{
-            'Database' = 'master'
-            'ServerInstance' = $sqlServer.FullyQualifiedDomainName
-            'Username' = $sqlServer.SqlAdministratorLogin
-            'Password' = $serverPassword
-            'OutputSqlErrors' = $true
-            #'InputFile' = ".\DisableSQLLoginsFetched.sql"
-            'InputFile' = "./disable-sql-logins.sql"
+        Write-Host "Connecting to SQL Server $($sqlServer.FullyQualifiedDomainName).."
+        try {
+            $conn.Open()
+            #$query = (Get-Content "./disable-sql-logins/disable-sql-logins.sql") -replace "@admin_login", $sqlServer.SqlAdministratorLogin
+            $query = (Get-Content "./disable-sql-logins/disable-sql-logins.sql")
+            $command = New-Object -TypeName System.Data.SqlClient.SqlCommand($query, $conn) 
+
+            # Use parameterized query to protect against SQL injection
+            $null = $command.Parameters.AddWithValue("@admin_login",$sqlServer.SqlAdministratorLogin)
+            Write-Host "Executing query:`n$($command.CommandText)"
+            $result = $command.ExecuteNonQuery()
+            $result
+        } finally {
+            $conn.Close()
         }
-        Invoke-Sqlcmd @params
     }
 }
-
-# Write an information log with the current time.
-Write-Host "PowerShell timer trigger function ran! TIME: $currentUTCtime"
