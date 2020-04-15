@@ -5,13 +5,22 @@
         "functionsAppServiceName": {
             "type": "string"
         },
-        "functionName": {
+        "shutdownName": {
+            "type": "string"
+        },
+        "shutdownFile": {
+            "type": "string"
+        },
+        "disableSqlLoginName": {
+            "type": "string"
+        },
+        "disableSqlLoginFile": {
+            "type": "string"
+        },
+        "disableSqlLoginScript": {
             "type": "string"
         },
         "functionSchedule": {
-            "type": "string"
-        },
-        "functionFile": {
             "type": "string"
         },
         "requirementsFile": {
@@ -29,7 +38,7 @@
     },
     "resources": [
         {
-          "name": "[concat(parameters('functionsAppServiceName'), '/', parameters('functionName'))]",
+          "name": "[concat(parameters('functionsAppServiceName'), '/', parameters('shutdownName'))]",
           "type": "Microsoft.Web/sites/functions",
           "apiVersion": "2018-11-01",
           "properties": {
@@ -45,13 +54,35 @@
                   "disabled": false
               },
               "files": {
-                  "run.ps1": "[parameters('functionFile')]",
+                  "run.ps1": "[parameters('shutdownFile')]",
                   "../requirements.psd1": "[parameters('requirementsFile')]",
                   "../profile.ps1": "[parameters('profileFile')]",
                   "../host.json": "[parameters('hostFile')]",
                   "../proxies.json": "[parameters('proxiesFile')]"
               }
           }
-        }        
-    ]
+        },
+        {
+            "name": "[concat(parameters('functionsAppServiceName'), '/', parameters('disableSqlLoginName'))]",
+            "type": "Microsoft.Web/sites/functions",
+            "apiVersion": "2018-11-01",
+            "properties": {
+                "config": {
+                    "bindings": [
+                        {
+                            "name": "Timer",
+                            "type": "timerTrigger",
+                            "direction": "in",
+                            "schedule": "[parameters('functionSchedule')]"
+                        }
+                    ],
+                    "disabled": false
+                },
+                "files": {
+                    "run.ps1": "[parameters('disableSqlLoginFile')]",
+                    "disable-sql-logins.sql": "[parameters('disableSqlLoginScript')]"
+                }
+            }
+          }        
+      ]
 }

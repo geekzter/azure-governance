@@ -1,5 +1,5 @@
 # Random resource suffix, this will prevent name collisions when creating resources in parallel
-resource "random_string" "suffix" {
+resource random_string suffix {
   length                       = 4
   upper                        = false
   lower                        = true
@@ -27,7 +27,7 @@ resource azurerm_resource_group governance_rg {
 }
 
 module auto_shutdown {
-  source                       = "./modules/auto-shutdown"
+  source                       = "./modules/functions"
   resource_group_id            = azurerm_resource_group.governance_rg.id
   location                     = azurerm_resource_group.governance_rg.location
   tags                         = local.tags
