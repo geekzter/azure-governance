@@ -9,20 +9,18 @@ if ($Timer.IsPastDue) {
 # Write an information log with the current time
 Write-Host "Starting Shutdown script at UTC $((Get-Date).ToUniversalTime())"
 
-# Get resources using Resource Graph (works accross subscriptions), ignore VM's with tag 'shutdown' value 'never'
-$graphQuery = "Resources | where type =~ 'Microsoft.Compute/virtualMachines' | where tags.shutdown!='never' | project id, name | order by name asc"
-$vmsToStop = Search-AzGraph -Query $graphQuery
+$vmsToStop = Get-AzResource -ResourceType "Microsoft.Compute/virtualMachines" -TagName shutdown -TagValue true
 
 # Stopping VM's (async)
 $vmsToStop | ForEach-Object {
-    Write-Host "Stopping $($_.name)..."
-    $null = Stop-AzVM -Id $_.id -NoWait -Force
+    Write-Host "Stopping $($_.Name)..."
+    $null = Stop-AzVM -Id $_.ResourceId -NoWait -Force
 }
 
 # Wait for VM's to be stopped
 $vmsToStop | ForEach-Object {
-    Write-Host "Waiting for $($_.name) to stop..."
-    $null = Stop-AzVM -Id $_.id -Force
+    Write-Host "Waiting for $($_.Name) to stop..."
+    $null = Stop-AzVM -Id $_.ResourceId -Force
 }
 
 # Write an information log with the current time
