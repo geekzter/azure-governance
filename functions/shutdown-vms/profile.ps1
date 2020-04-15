@@ -8,19 +8,13 @@
 #
 # You can define helper functions, run commands, or specify environment variables
 # NOTE: any variables defined that are not environment variables will get reset after the first execution
-
-
-Write-Host "Available Az modules:"
-Get-Module -ListAvailable Az
-Get-Module -ListAvailable Az.Accounts
-
 # Authenticate with Azure PowerShell using MSI.
 # Remove this if you are not planning on using MSI or Azure PowerShell.
+
 if ($env:MSI_SECRET -and (Get-Module -ListAvailable Az.Accounts)) {
-    Connect-AzAccount -Identity
+    Connect-AzAccount -Identity
 }
 
 # Uncomment the next line to enable legacy AzureRm alias in Azure PowerShell.
 # Enable-AzureRmAlias
-
 # You can also define functions or aliases that can be referenced in any of your PowerShell functions.
