@@ -8,7 +8,7 @@ resource random_string suffix {
 }
 
 locals {
-  resource_group_name          = "${lower(var.resource_group_name)}-${lower(random_string.suffix.result)}"
+  resource_group_name          = "${lower(var.resource_group_prefix)}-${lower(random_string.suffix.result)}"
   tags                         = merge(
     var.tags,
     map(
@@ -31,4 +31,18 @@ module auto_shutdown {
   resource_group_id            = azurerm_resource_group.governance_rg.id
   location                     = azurerm_resource_group.governance_rg.location
   tags                         = local.tags
+}
+
+module monitoring {
+  source                       = "./modules/monitoring"
+  resource_group_name          = azurerm_resource_group.governance_rg.name
+  location                     = azurerm_resource_group.governance_rg.location
+  workspace_location           = azurerm_resource_group.governance_rg.location
+  tags                         = local.tags
+}
+
+module security_center {
+  source                       = "./modules/security_center"
+  sku                          = "Standard"
+  workspace_id                 = module.monitoring.workspace_id
 }
