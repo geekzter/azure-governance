@@ -9,12 +9,12 @@ resource random_string suffix {
 
 locals {
   resource_group_name          = "${lower(var.resource_group_prefix)}-${lower(random_string.suffix.result)}"
-  tags                         = merge(
-    var.tags,
-    map(
-      "suffix",                  random_string.suffix.result,
-      "workspace",               terraform.workspace,
-    )
+  tags                         = map(
+    "application",             "Governance",
+    "provisioner",             "terraform",
+    "repository",              "azure-governance",
+    "suffix",                  random_string.suffix.result,
+    "workspace",               terraform.workspace,
   )
 }
 
