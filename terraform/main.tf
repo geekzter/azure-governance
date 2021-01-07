@@ -34,6 +34,8 @@ module auto_shutdown {
   resource_group_id            = azurerm_resource_group.governance_rg.id
   location                     = azurerm_resource_group.governance_rg.location
   tags                         = local.tags
+
+  count                        = var.deploy_functions ? 1 : 0
 }
 
 module monitoring {
@@ -42,6 +44,12 @@ module monitoring {
   location                     = azurerm_resource_group.governance_rg.location
   workspace_location           = azurerm_resource_group.governance_rg.location
   tags                         = local.tags
+}
+
+module roles {
+  source                       = "./modules/roles"
+
+  count                        = var.deploy_custom_roles ? 1 : 0
 }
 
 module security_center {
@@ -65,12 +73,6 @@ resource azurerm_storage_account config {
 
   tags                         = local.tags
 }
-resource azurerm_role_assignment terraform_storage_owner {
-  scope                        = azurerm_storage_account.config.id
-  role_definition_name         = "Storage Blob Data Contributor"
-  principal_id                 = data.azurerm_client_config.current.object_id
-
-}
 resource azurerm_storage_container configuration {
   name                         = "configuration"
   storage_account_name         = azurerm_storage_account.config.name
@@ -84,5 +86,4 @@ resource azurerm_storage_blob minecraft_auto_vars_configuration {
   source                       = "${path.root}/config.auto.tfvars"
 
   count                        = fileexists("${path.root}/config.auto.tfvars") ? 1 : 0
-  depends_on                   = [azurerm_role_assignment.terraform_storage_owner]
 }
