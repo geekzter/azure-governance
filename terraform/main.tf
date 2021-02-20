@@ -54,7 +54,9 @@ module roles {
 
 module security_center {
   source                       = "./modules/security_center"
-  sku                          = "Standard"
+  auto_provision               = var.security_center_auto_provision
+  contact_email                = var.security_center_contact_email
+  sku                          = var.security_center_sku
   workspace_id                 = module.monitoring.workspace_id
 }
 

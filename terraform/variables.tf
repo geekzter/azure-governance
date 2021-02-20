@@ -16,6 +16,17 @@ variable resource_group_prefix {
   description  = "The name of the resource group to be used"
   default      = "Governance"
 }
+variable security_center_auto_provision {
+  default      = false
+  type         = bool
+}
+variable security_center_contact_email {
+  default      = ""
+}
+variable security_center_sku {
+  default      = "Standard"
+}
+
 variable subscription_id {
   type         = string
   default      = ""
