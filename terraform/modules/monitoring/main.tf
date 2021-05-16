@@ -10,6 +10,21 @@ resource azurerm_log_analytics_workspace vcd_workspace {
   tags                         = var.tags
 }
 
+resource azurerm_log_analytics_solution solution {
+  solution_name                = each.value
+  location                     = var.workspace_location
+  resource_group_name          = var.resource_group_name
+  workspace_resource_id        = azurerm_log_analytics_workspace.vcd_workspace.id
+  workspace_name               = azurerm_log_analytics_workspace.vcd_workspace.name
+
+  plan {
+    publisher                  = "Microsoft"
+    product                    = "OMSGallery/${each.value}"
+  }
+
+  for_each                     = toset(var.solutions)
+} 
+
 resource azurerm_monitor_diagnostic_setting activity_log {
   name                         = "${var.resource_group_name}-activity-log"
   target_resource_id           = data.azurerm_subscription.primary.id

@@ -1,23 +1,11 @@
 terraform {
   required_providers {
-    azuread = {
-      source  = "hashicorp/azuread"
-      version = "~> 1.4"
-    }
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 2.48"
-    }
-    null = {
-      source  = "hashicorp/null"
-      version = "~> 3.0.0"
-    }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0.0"
-    }
+    azuread                    = "~> 1.4"
+    azurerm                    = "~> 2.59"
+    null                       = "~> 3.1"
+    random                     = "~> 3.1"
   }
-  required_version = "~> 0.14.0"
+  required_version             = ">= 0.14.0"
 }
 
 # Microsoft Azure Resource Manager Provider

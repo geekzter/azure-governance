@@ -31,7 +31,24 @@ variable subscription_id {
   type         = string
   default      = ""
 }
+variable log_analytics_solutions {
+  type         = list
+  default      = [
+    "Security",
+    "SecurityCenterFree",
+    "ServiceMap",
+    "Updates",
+    "VMInsights",
+  ]
+} 
 variable tenant_id {
   type         = string
   default      = ""
+}
+
+variable timezone {
+  default                      = "W. Europe Standard Time"
+}
+variable update_time {
+  default      = "21:00"
 }
