@@ -1,0 +1,188 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "For_each": {
+                "actions": {
+                    "VM_has_been_tagged": {
+                        "actions": {
+                            "Deallocate_virtual_machine": {
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "name": "@parameters('$connections')['azurevm']['connectionId']"
+                                        }
+                                    },
+                                    "method": "post",
+                                    "path": "@concat(items('For_each')?['id'],'/deallocate')",
+                                    "queries": {
+                                        "api-version": "2019-12-01"
+                                    }
+                                },
+                                "runAfter": {},
+                                "type": "ApiConnection"
+                            }
+                        },
+                        "else": {
+                            "actions": {
+                                "Parse_JSON": {
+                                    "inputs": {
+                                        "content": "@items('For_each')?['tags']",
+                                        "schema": {
+                                            "properties": {
+                                                "application": {
+                                                    "type": "string"
+                                                },
+                                                "environment": {
+                                                    "type": "string"
+                                                },
+                                                "provisioner": {
+                                                    "type": "string"
+                                                },
+                                                "repository": {
+                                                    "type": "string"
+                                                },
+                                                "shutdown": {
+                                                    "type": "string"
+                                                },
+                                                "suffix": {
+                                                    "type": "string"
+                                                },
+                                                "workspace": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "runAfter": {},
+                                    "type": "ParseJson"
+                                },
+                                "Tag_'shutdown'_has_been_set_to_'true'": {
+                                    "actions": {
+                                        "Deallocate_virtual_machine_tagged_'shutdown'='true'": {
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "name": "@parameters('$connections')['azurevm']['connectionId']"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "path": "@concat(items('For_each')?['id'],'/deallocate')",
+                                                "queries": {
+                                                    "api-version": "2019-12-01"
+                                                }
+                                            },
+                                            "runAfter": {},
+                                            "type": "ApiConnection"
+                                        }
+                                    },
+                                    "expression": {
+                                        "and": [
+                                            {
+                                                "equals": [
+                                                    "@body('Parse_JSON')?['shutdown']",
+                                                    true
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    "runAfter": {
+                                        "Parse_JSON": [
+                                            "Succeeded"
+                                        ]
+                                    },
+                                    "type": "If"
+                                }
+                            }
+                        },
+                        "expression": {
+                            "and": [
+                                {
+                                    "not": {
+                                        "equals": [
+                                            "@coalesce(items('For_each')?['tags'],'empty')",
+                                            "'empty'"
+                                        ]
+                                    }
+                                }
+                            ]
+                        },
+                        "runAfter": {},
+                        "type": "If"
+                    }
+                },
+                "foreach": "@body('Select_Virtual_Machines')",
+                "runAfter": {
+                    "Select_Virtual_Machines": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Foreach"
+            },
+            "List_resources_by_subscription_2": {
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "name": "@parameters('$connections')['arm_1']['connectionId']"
+                        }
+                    },
+                    "method": "get",
+                    "path": "/subscriptions/@{encodeURIComponent('84c1a2c7-585a-4753-ad28-97f69618cf12')}/resources",
+                    "queries": {
+                        "x-ms-api-version": "2016-06-01"
+                    }
+                },
+                "runAfter": {},
+                "type": "ApiConnection"
+            },
+            "Select_Virtual_Machines": {
+                "inputs": {
+                    "from": "@body('List_resources_by_subscription_2')?['value']",
+                    "where": "@equals(item()?['type'], 'Microsoft.Compute/virtualMachines')"
+                },
+                "runAfter": {
+                    "List_resources_by_subscription_2": [
+                        "Succeeded"
+                    ]
+                },
+                "type": "Query"
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "parameters": {
+            "$connections": {
+                "defaultValue": {},
+                "type": "Object"
+            }
+        },
+        "triggers": {
+            "Nightly": {
+                "recurrence": {
+                    "frequency": "Day",
+                    "interval": 1,
+                    "startTime": "2021-02-23T23:59:00Z",
+                    "timeZone": "W. Europe Standard Time"
+                },
+                "type": "Recurrence"
+            }
+        }
+    },
+    "parameters": {
+        "$connections": {
+            "value": {
+                "arm_1": {
+                    "connectionId": "/subscriptions/84c1a2c7-585a-4753-ad28-97f69618cf12/resourceGroups/Automation/providers/Microsoft.Web/connections/arm",
+                    "connectionName": "arm",
+                    "id": "/subscriptions/84c1a2c7-585a-4753-ad28-97f69618cf12/providers/Microsoft.Web/locations/westeurope/managedApis/arm"
+                },
+                "azurevm": {
+                    "connectionId": "/subscriptions/84c1a2c7-585a-4753-ad28-97f69618cf12/resourceGroups/Automation/providers/Microsoft.Web/connections/azurevm",
+                    "connectionName": "azurevm",
+                    "id": "/subscriptions/84c1a2c7-585a-4753-ad28-97f69618cf12/providers/Microsoft.Web/locations/westeurope/managedApis/azurevm"
+                }
+            }
+        }
+    }
+}

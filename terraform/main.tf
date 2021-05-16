@@ -1,3 +1,5 @@
+data azurerm_client_config current {}
+
 # Random resource suffix, this will prevent name collisions when creating resources in parallel
 resource random_string suffix {
   length                       = 4
@@ -9,13 +11,14 @@ resource random_string suffix {
 
 locals {
   resource_group_name          = "${lower(var.resource_group_prefix)}-${lower(random_string.suffix.result)}"
-  tags                         = merge(
-    var.tags,
-    map(
-      "suffix",                  random_string.suffix.result,
-      "workspace",               terraform.workspace,
-    )
-  )
+  suffix                       = random_string.suffix.result
+  tags                         = {
+    application                = "Governance"
+    provisioner                = "terraform"
+    repository                 = "azure-governance"
+    suffix                     = local.suffix
+    workspace                  = terraform.workspace
+  }
 }
 
 # Create Azure resource group to be used for VDC resources
@@ -26,23 +29,32 @@ resource azurerm_resource_group governance_rg {
   tags                         = local.tags
 }
 
-module auto_shutdown {
-  source                       = "./modules/functions"
-  resource_group_id            = azurerm_resource_group.governance_rg.id
-  location                     = azurerm_resource_group.governance_rg.location
-  tags                         = local.tags
-}
-
-module monitoring {
-  source                       = "./modules/monitoring"
+resource azurerm_storage_account config {
+  name                         = "governancecfg${local.suffix}"
   resource_group_name          = azurerm_resource_group.governance_rg.name
   location                     = azurerm_resource_group.governance_rg.location
-  workspace_location           = azurerm_resource_group.governance_rg.location
+  account_tier                 = "Standard"
+  account_replication_type     = "LRS"
+
+  blob_properties {
+    delete_retention_policy {
+      days                     = 365
+    }
+  }
+
   tags                         = local.tags
 }
+resource azurerm_storage_container configuration {
+  name                         = "configuration"
+  storage_account_name         = azurerm_storage_account.config.name
+  container_access_type        = "private"
+}
+resource azurerm_storage_blob minecraft_auto_vars_configuration {
+  name                         = "config.auto.tfvars"
+  storage_account_name         = azurerm_storage_account.config.name
+  storage_container_name       = azurerm_storage_container.configuration.name
+  type                         = "Block"
+  source                       = "${path.root}/config.auto.tfvars"
 
-module security_center {
-  source                       = "./modules/security_center"
-  sku                          = "Standard"
-  workspace_id                 = module.monitoring.workspace_id
+  count                        = fileexists("${path.root}/config.auto.tfvars") ? 1 : 0
 }

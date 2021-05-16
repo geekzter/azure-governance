@@ -42,8 +42,9 @@ resource azurerm_function_app vdc_functions {
   location                     = var.location
   resource_group_name          = local.resource_group_name
   app_service_plan_id          = azurerm_app_service_plan.vdc_functions.id
-  storage_connection_string    = azurerm_storage_account.automation_storage.primary_connection_string
-  enable_builtin_logging       = "true"
+  storage_account_name         = azurerm_storage_account.automation_storage.name
+  storage_account_access_key   = azurerm_storage_account.automation_storage.primary_access_key
+  enable_builtin_logging       = true
 
   identity {
     type                       = "SystemAssigned"
