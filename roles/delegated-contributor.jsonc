@@ -1,0 +1,37 @@
+{
+  /*
+  Role inspired by the 'Application Owner' role defined in the Cloud Adoption Framework: https://docs.microsoft.com/en-us/azure/cloud-adoption-framework/ready/enterprise-scale/identity-and-access-management#plan-for-identity-and-access-management
+  Adapt to your own requirements, and test thoroughly
+  Remove comments and assign guid values if you take this file to create a role definition
+  Alternatively, use create_or_update_role.ps1
+  */
+  "assignableScopes": [
+    // "/"
+    "/subscriptions/00000000-0000-0000-0000-000000000000"
+  ],
+  "name": "Application Owner example",
+  "description": "This is an example Application Owner role with some permissions removed to meet governance requirements, please adapt to your own needs",
+  "permissions": [
+    {
+      "actions": [
+        "*"
+      ],
+      "dataActions": [],
+      "notActions": [
+        // No access elevation
+        "Microsoft.Authorization/*/delete",
+        "Microsoft.Authorization/*/write",
+        "Microsoft.Authorization/elevateAccess/Action",
+
+        // No hybrid connectivity
+        "Microsoft.Network/expressRouteCircuits/*",
+        "Microsoft.Network/vpnGateways/*",
+        "Microsoft.Network/vpnSites/*",
+      ],
+      "notDataActions": []
+    }
+  ],
+  "roleName": "Application Owner example",
+  "roleType": "CustomRole",
+  "type": "Microsoft.Authorization/roleDefinitions"
+}
