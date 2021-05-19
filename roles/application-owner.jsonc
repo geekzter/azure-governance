@@ -4,6 +4,9 @@
   Adapt to your own requirements, and test thoroughly
   Remove comments and assign guid values if you take this file to create a role definition
   Alternatively, use create_or_update_role.ps1
+
+  To prevent specific resources from being deleted, use resource locks instead:
+  https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources
   */
   "assignableScopes": [
     // "/"
@@ -18,15 +21,28 @@
       ],
       "dataActions": [],
       "notActions": [
-        // No access elevation
+        // 1. No access elevation
         "Microsoft.Authorization/*/delete",
         "Microsoft.Authorization/*/write",
         "Microsoft.Authorization/elevateAccess/Action",
 
-        // No hybrid connectivity
+        // 2. Do not circumvent hybrid connectivity
         "Microsoft.Network/expressRouteCircuits/*",
         "Microsoft.Network/vpnGateways/*",
         "Microsoft.Network/vpnSites/*",
+
+        // 3. No Internet traffic independent from Hub network (both inbound and outbound)
+        "Microsoft.Network/publicIPAddresses/write",
+
+        // 4. Do not circumvent hub network
+        "Microsoft.Network/routeTables/write",
+
+        // 5. Do not allow modification / deletion of Network Security group rules
+        "Microsoft.Network/networkSecurityGroups/delete",
+        "Microsoft.Network/networkSecurityGroups/write",
+
+        // 6. Do not allow any modification on the Virtual Network (team boundary)
+        "Microsoft.Network/virtualNetworks/write",
       ],
       "notDataActions": []
     }

@@ -1,18 +1,21 @@
 #!/usr/bin/env pwsh
 param ( 
   [parameter(Mandatory=$false)][string]$SubscriptionID=$env:ARM_SUBSCRIPTION_ID,
-  [parameter(Mandatory=$false)][string]$RoleDefinitionFile="delegated-contributor.jsonc"
+  [parameter(Mandatory=$false)][string]$RoleDefinitionFile="application-owner.jsonc"
 ) 
 #Requires -Version 7
 
 $roleObject = (Get-Content $RoleDefinitionFile | ConvertFrom-Json)  
 if ($SubscriptionID) {
-  $roleObject.assignableScopes = ($role.assignableScopes -replace "00000000-0000-0000-0000-000000000000",$SubscriptionID)
+  Write-Verbose "Subscription: $SubscriptionID"
+  $roleObject.assignableScopes = ($roleObject.assignableScopes -replace "00000000-0000-0000-0000-000000000000",$SubscriptionID)
+} elseif ($roleObject.assignableScopes -match "00000000-0000-0000-0000-000000000000") {
+  Write-Warning "No SubscriptionID specified, exiting"
+  exit
 }
 
 $updatedroleDefinitionFile = New-TemporaryFile
-Write-Verbose "role:`n"
-Write-Verbose "$($roleObject | ConvertTo-Json -Depth 4)"
+Write-Verbose "role:`n$($roleObject | ConvertTo-Json -Depth 4)"
 $roleObject | ConvertTo-Json -Depth 4 | Out-File $updatedroleDefinitionFile
 
 Write-Debug "Applying role definition file ${updatedroleDefinitionFile}:`n"
@@ -24,6 +27,5 @@ if ($roleExists) {
   az role definition update --role-definition $updatedroleDefinitionFile --subscription $SubscriptionID
 } else {
   Write-Host "Creating role $($roleObject.name)..."
-  # az role definition create --role-definition $updatedroleDefinitionFile $subscriptionArgs
   az role definition create --role-definition $updatedroleDefinitionFile --subscription $SubscriptionID
 }
