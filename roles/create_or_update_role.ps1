@@ -1,9 +1,14 @@
 #!/usr/bin/env pwsh
 param ( 
   [parameter(Mandatory=$false)][string]$SubscriptionID=$env:ARM_SUBSCRIPTION_ID,
+  [parameter(Mandatory=$false)][string]$TenantID=$env:ARM_TENANT_ID,
   [parameter(Mandatory=$false)][string]$RoleDefinitionFile="application-owner.jsonc"
 ) 
 #Requires -Version 7
+
+. (Join-Path $PSScriptRoot .. scripts functions.ps1)
+
+AzLogin -SubscriptionID $SubscriptionID -TenantID $TenantID
 
 $roleObject = (Get-Content $RoleDefinitionFile | ConvertFrom-Json)  
 if ($SubscriptionID) {
