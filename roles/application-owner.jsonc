@@ -5,7 +5,7 @@
   Adapt to your own requirements, and test thoroughly
 
   INSTRUCTIONS:
-  Remove comments and assign guid values if you take this file to create a role definition
+  Remove comments and assigned guid values if you take this file to create a role definition directly
   Alternatively, use create_or_update_role.ps1
 
   To prevent specific resources from being deleted, use resource locks instead:
@@ -24,27 +24,32 @@
       ],
       "dataActions": [],
       "notActions": [
-        // 1. No access elevation
+        // 1. No not allow access elevation
         "Microsoft.Authorization/*/delete",
         "Microsoft.Authorization/*/write",
         "Microsoft.Authorization/elevateAccess/Action",
 
-        // 2. Do not circumvent hybrid connectivity
+        // 2. Do not allow holes to be created to/from Internet
+        //    i.e. inbound and outbound traffic needs to traverse through peered (Hub) network with pre-existing connectivity
+        "Microsoft.Network/publicIPAddresses/write", 
+
+        // 3. Do not circumvent hub network
+        "Microsoft.Network/virtualNetworks/peer/action",                  // Do not allow 'shadow IT' peering to establish connectivity
+        "Microsoft.Network/virtualNetworks/virtualNetworkPeerings/write", // Do not allow 'shadow IT' peering to establish connectivity
+        // "Microsoft.Network/routeTables/write", // Not needed it the above items are blocked
+
+        // 4. Do not allow independent hybrid connectivity
         "Microsoft.Network/expressRouteCircuits/*",
-        // "Microsoft.Network/vpnGateways/*",
-        // "Microsoft.Network/vpnSites/*",
-
-        // 3. No Internet traffic independent from Hub network (both inbound and outbound)
-        "Microsoft.Network/publicIPAddresses/write",
-
-        // 4. Do not circumvent hub network
-        // "Microsoft.Network/routeTables/write",
+        // "Microsoft.Network/vpnGateways/*", // Not needed if Microsoft.Network/publicIPAddresses/write is already blocked
+        // "Microsoft.Network/vpnSites/*",    // Not needed if Microsoft.Network/publicIPAddresses/write is already blocked
 
         // 5. Do not allow modification / deletion of Network Security group rules
-        // "Microsoft.Network/networkSecurityGroups/delete",
-        // "Microsoft.Network/networkSecurityGroups/write",
+        //    e.g. when network management is done by a different team (Network Contributor role)
+        // "Microsoft.Network/networkSecurityGroups/delete", 
+        // "Microsoft.Network/networkSecurityGroups/write",  
 
-        // 6. Do not allow any modification on the Virtual Network (team boundary)
+        // 6. Do not allow any modification on the Virtual Network
+        //    e.g. when network management is done by a different team (Network Contributor role)
         // "Microsoft.Network/virtualNetworks/write",
       ],
       "notDataActions": []
