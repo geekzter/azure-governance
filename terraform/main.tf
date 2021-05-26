@@ -58,3 +58,12 @@ resource azurerm_storage_blob minecraft_auto_vars_configuration {
 
   count                        = fileexists("${path.root}/config.auto.tfvars") ? 1 : 0
 }
+resource azurerm_storage_blob minecraft_workspace_vars_configuration {
+  name                         = "${terraform.workspace}.tfvars"
+  storage_account_name         = azurerm_storage_account.config.name
+  storage_container_name       = azurerm_storage_container.configuration.name
+  type                         = "Block"
+  source                       = "${path.root}/${terraform.workspace}.tfvars"
+
+  count                        = fileexists("${path.root}/${terraform.workspace}.tfvars") ? 1 : 0
+}

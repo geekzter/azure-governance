@@ -1,13 +1,23 @@
 function AzLogin (
-    [parameter(Mandatory=$false)][switch]$DisplayMessages=$false,
-    [parameter(Mandatory=$false)][string]$SubscriptionID=$env:ARM_SUBSCRIPTION_ID,
-    [parameter(Mandatory=$false)][string]$TenantID=$env:ARM_TENANT_ID
-  ) {
-    # Azure CLI
+    [parameter(Mandatory=$false)][switch]$DisplayMessages=$false
+) {
+    # Are we logged into the wrong tenant?
+    Invoke-Command -ScriptBlock {
+        $Private:ErrorActionPreference = "Continue"
+        if ($env:ARM_TENANT_ID) {
+            $script:loggedInTenantId = $(az account show --query tenantId -o tsv 2>$null)
+        }
+    }
+    if ($loggedInTenantId -and ($loggedInTenantId -ine $env:ARM_TENANT_ID)) {
+        Write-Warning "Logged into tenant $loggedInTenantId instead of $env:ARM_TENANT_ID (`$env:ARM_TENANT_ID), logging off az session"
+        az logout -o none
+    }
+
+    # Are we logged in?
     Invoke-Command -ScriptBlock {
         $Private:ErrorActionPreference = "Continue"
         # Test whether we are logged in
-        $Script:loginError = $(az account show -o none 2>&1)
+        $script:loginError = $(az account show -o none 2>&1)
         if (!$loginError) {
             $Script:userType = $(az account show --query "user.type" -o tsv)
             if ($userType -ieq "user") {
@@ -19,15 +29,15 @@ function AzLogin (
     $login = ($loginError -or $userError)
     # Set Azure CLI context
     if ($login) {
-        if ($TenantID) {
-            az login -t $TenantID -o none
+        if ($env:ARM_TENANT_ID) {
+            az login -t $env:ARM_TENANT_ID -o none
         } else {
             az login -o none
         }
     }
 
     if ($DisplayMessages) {
-        if ($SubscriptionID -or ($(az account list --query "length([])" -o tsv) -eq 1)) {
+        if ($env:ARM_SUBSCRIPTION_ID -or ($(az account list --query "length([])" -o tsv) -eq 1)) {
             Write-Host "Using subscription '$(az account show --query "name" -o tsv)'"
         } else {
             if ($env:TF_IN_AUTOMATION -ine "true") {
@@ -38,10 +48,10 @@ function AzLogin (
                 Write-Host "Set `$env:ARM_SUBSCRIPTION_ID to the id of the subscription you want to use to prevent this prompt" -NoNewline
 
                 do {
-                    Write-Host "`nEnter the index # of the subscription you want to use: " -ForegroundColor Cyan -NoNewline
+                    Write-Host "`nEnter the index # of the subscription you want Terraform to use: " -ForegroundColor Cyan -NoNewline
                     $occurrence = Read-Host
                 } while (($occurrence -notmatch "^\d+$") -or ($occurrence -lt 1) -or ($occurrence -gt $subscriptions.Length))
-                $SubscriptionID = $subscriptions[$occurrence-1].id
+                $env:ARM_SUBSCRIPTION_ID = $subscriptions[$occurrence-1].id
             
                 Write-Host "Using subscription '$($subscriptions[$occurrence-1].name)'" -ForegroundColor Yellow
                 Start-Sleep -Seconds 1
@@ -51,7 +61,24 @@ function AzLogin (
         }
     }
 
-    if ($SubscriptionID) {
-        az account set -s $SubscriptionID -o none
+    if ($env:ARM_SUBSCRIPTION_ID) {
+        az account set -s $env:ARM_SUBSCRIPTION_ID -o none
+    }
+
+    # Populate Terraform azurerm variables where possible
+    if ($userType -ine "user") {
+        # Pass on pipeline service principal credentials to Terraform
+        $env:ARM_CLIENT_ID       ??= $env:servicePrincipalId
+        $env:ARM_CLIENT_SECRET   ??= $env:servicePrincipalKey
+        $env:ARM_TENANT_ID       ??= $env:tenantId
+        # Get from Azure CLI context
+        $env:ARM_TENANT_ID       ??= $(az account show --query tenantId -o tsv)
+        $env:ARM_SUBSCRIPTION_ID ??= $(az account show --query id -o tsv)
+    }
+    # Variables for Terraform azurerm Storage backend
+    if (!$env:ARM_ACCESS_KEY -and !$env:ARM_SAS_TOKEN) {
+        if ($env:TF_VAR_backend_storage_account -and $env:TF_VAR_backend_storage_container) {
+            $env:ARM_SAS_TOKEN=$(az storage container generate-sas -n $env:TF_VAR_backend_storage_container --as-user --auth-mode login --account-name $env:TF_VAR_backend_storage_account --permissions acdlrw --expiry (Get-Date).AddDays(7).ToString("yyyy-MM-dd") -o tsv)
+        }
     }
 }
