@@ -1,0 +1,61 @@
+{
+  /*
+  DISCLAIMER:
+  Role inspired by the 'Application Owner' role defined in the Cloud Adoption Framework: https://docs.microsoft.com/en-us/azure/cloud-adoption-framework/ready/enterprise-scale/identity-and-access-management#plan-for-identity-and-access-management
+  Adapt to your own requirements, and test thoroughly
+
+  INSTRUCTIONS:
+  Remove comments and assigned guid values if you take this file to create a role definition directly
+  Alternatively, use create_or_update_role.ps1
+
+  To prevent specific resources from being deleted, use resource locks instead:
+  https://docs.microsoft.com/en-us/azure/azure-resource-manager/management/lock-resources
+  */
+  "assignableScopes": [
+    // "/"
+    "/subscriptions/00000000-0000-0000-0000-000000000000"
+  ],
+  "name": "Application Owner example",
+  "description": "This is an example Application Owner role with some permissions removed to meet governance requirements, please adapt to your own needs",
+  "permissions": [
+    {
+      "actions": [
+        "*"
+      ],
+      "dataActions": [],
+      "notActions": [
+        // 1. No not allow access elevation
+        "Microsoft.Authorization/*/delete",
+        "Microsoft.Authorization/*/write",
+        "Microsoft.Authorization/elevateAccess/Action",
+
+        // 2. Do not allow holes to be created to/from Internet
+        //    i.e. inbound and outbound traffic needs to traverse through peered (Hub) network with pre-existing connectivity
+        "Microsoft.Network/publicIPAddresses/write", 
+
+        // 3. Do not circumvent hub network
+        "Microsoft.Network/virtualNetworks/peer/action",                  // Do not allow 'shadow IT' peering to establish connectivity
+        "Microsoft.Network/virtualNetworks/virtualNetworkPeerings/write", // Do not allow 'shadow IT' peering to establish connectivity
+        // "Microsoft.Network/routeTables/write", // Not needed it the above items are blocked
+
+        // 4. Do not allow independent hybrid connectivity
+        "Microsoft.Network/expressRouteCircuits/*",
+        // "Microsoft.Network/vpnGateways/*", // Not needed if Microsoft.Network/publicIPAddresses/write is already blocked
+        // "Microsoft.Network/vpnSites/*",    // Not needed if Microsoft.Network/publicIPAddresses/write is already blocked
+
+        // 5. Do not allow modification / deletion of Network Security group rules
+        //    e.g. when network management is done by a different team (Network Contributor role)
+        // "Microsoft.Network/networkSecurityGroups/delete", 
+        // "Microsoft.Network/networkSecurityGroups/write",  
+
+        // 6. Do not allow any modification on the Virtual Network
+        //    e.g. when network management is done by a different team (Network Contributor role)
+        // "Microsoft.Network/virtualNetworks/write",
+      ],
+      "notDataActions": []
+    }
+  ],
+  "roleName": "Application Owner example",
+  "roleType": "CustomRole",
+  "type": "Microsoft.Authorization/roleDefinitions"
+}
