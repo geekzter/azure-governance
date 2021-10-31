@@ -15,6 +15,8 @@ locals {
   tags                         = {
     application                = "Governance"
     provisioner                = "terraform"
+    provisioner-client-id      = data.azurerm_client_config.current.client_id
+    provisioner-object-id      = data.azurerm_client_config.current.object_id
     repository                 = "azure-governance"
     suffix                     = local.suffix
     workspace                  = terraform.workspace
