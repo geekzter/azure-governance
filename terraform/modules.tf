@@ -20,7 +20,7 @@ module automation {
   source                       = "./modules/automation"
   resource_group_name          = azurerm_resource_group.governance_rg.name
   location                     = azurerm_resource_group.governance_rg.location
-  workspace_id                 = module.monitoring.workspace_id
+  workspace_id                 = module.monitoring.workspace_resource_id
   tags                         = local.tags
 }
 
@@ -47,7 +47,7 @@ module security_center {
   auto_provision               = var.security_center_auto_provision
   contact_email                = var.security_center_contact_email
   sku                          = var.security_center_sku
-  workspace_id                 = module.monitoring.workspace_id
+  workspace_id                 = module.monitoring.workspace_resource_id
 
   depends_on                   = [module.monitoring]
 }
